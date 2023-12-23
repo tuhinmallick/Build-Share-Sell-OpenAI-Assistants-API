@@ -22,17 +22,11 @@ def upload_to_openai(file):
 
 
 def export_assistant(nome_assistente, modello_assistente, prompt_sistema, file_up):
-    file_yaml = open("config_assistente.yaml", "w")
-    file_yaml.write("name: " + nome_assistente + "\n")
-    file_yaml.write("model: " + modello_assistente + "\n")
-    file_yaml.close()
-
-    #Crea file.txt per sistem_prompt
-    file_prompt = open("prompt.txt", "w")
-    file_prompt.write(prompt_sistema)
-    file_prompt.close()
-
-
+    with open("config_assistente.yaml", "w") as file_yaml:
+        file_yaml.write(f"name: {nome_assistente}" + "\n")
+        file_yaml.write(f"model: {modello_assistente}" + "\n")
+    with open("prompt.txt", "w") as file_prompt:
+        file_prompt.write(prompt_sistema)
     #CREO IL FILE ZIP
     zip_file = zipfile.ZipFile("config_assistente.zip", "w")
     zip_file.write("config_assistente.yaml")
@@ -64,8 +58,8 @@ def create_assistant_from_config_file(file_up, client):
             config_data = yaml.safe_load(yaml_file)
             nome_assistente = config_data.get('name', '')
             modello_assistente = config_data.get('model', '')
-            st.write("Nome Assistente: " + nome_assistente)
-            st.write("Modello Assistente: " + modello_assistente)
+            st.write(f"Nome Assistente: {nome_assistente}")
+            st.write(f"Modello Assistente: {modello_assistente}")
 
         with open("temp_folder/prompt.txt", "r") as prompt_file:
             prompt_sistema = prompt_file.read()
@@ -74,9 +68,10 @@ def create_assistant_from_config_file(file_up, client):
         if os.path.exists("temp_folder"):
             for root, dirs, files in os.walk("temp_folder"):
                 for file in files:
-                    if file != "config_assistente.yaml" and file != "prompt.txt":
-                        additional_file_id = upload_to_openai(open(os.path.join(root, file), "rb"))
-                        if additional_file_id:
+                    if file not in ["config_assistente.yaml", "prompt.txt"]:
+                        if additional_file_id := upload_to_openai(
+                            open(os.path.join(root, file), "rb")
+                        ):
                             stored_file.append(additional_file_id)
 
             my_assistant = client.beta.assistants.create(
